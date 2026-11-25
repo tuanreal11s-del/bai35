@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bài tập 35 - Danh sách sản phẩm</title>
+  <style>
+    :root {
+      --bg: #f5f7fb; --card: #ffffff; --text: #1f2937; --muted: #6b7280;
+      --primary: #2563eb; --border: #e5e7eb; --danger: #b91c1c; --danger-bg: #fee2e2;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111827; --card: #1f2937; --text: #f3f4f6; --muted: #9ca3af;
+        --primary: #60a5fa; --border: #374151; --danger: #fecaca; --danger-bg: #7f1d1d;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px 16px; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { text-align: center; margin: 0 0 20px; }
+    .search { display: flex; gap: 8px; margin-bottom: 20px; }
+    .search input {
+      flex: 1; padding: 12px 14px; font-size: 1rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--card); color: var(--text);
+    }
+    .search input:focus { outline: 2px solid var(--primary); }
+    .search button {
+      padding: 12px 18px; border: 0; border-radius: 8px; cursor: pointer;
+      background: var(--primary); color: #fff; font-size: 1rem;
+    }
+    .grid {
+      display: grid; gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .icon { font-size: 3rem; text-align: center; }
+    .card h2 { font-size: 1.05rem; margin: 0; }
+    .card p { margin: 0; color: var(--muted); font-size: .9rem; flex: 1; }
+    .price { font-weight: 700; color: var(--primary); }
+    .error {
+      background: var(--danger-bg); color: var(--danger); padding: 14px;
+      border-radius: 8px; text-align: center;
+    }
+    .count { color: var(--muted); margin-bottom: 12px; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛒 Danh sách sản phẩm</h1>
+
+    <div class="search">
+      <input id="searchInput" type="search" maxlength="50"
+             placeholder="Tìm theo tên sản phẩm..." aria-label="Tìm kiếm sản phẩm" autocomplete="off">
+      <button id="clearBtn" type="button">Xóa</button>
+    </div>
+
+    <div id="count" class="count" aria-live="polite"></div>
+    <div id="list" class="grid"></div>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    // Dữ liệu sản phẩm (mảng JavaScript)
+    const products = [
+      { id: 1, name: "Laptop Dell XPS 13",   price: 28990000, icon: "💻", desc: "Mỏng nhẹ, màn hình InfinityEdge sắc nét." },
+      { id: 2, name: "iPhone 15 Pro",        price: 27490000, icon: "📱", desc: "Chip A17 Pro, khung titan, camera 48MP." },
+      { id: 3, name: "Tai nghe Sony WH-1000XM5", price: 7990000, icon: "🎧", desc: "Chống ồn chủ động hàng đầu, pin 30 giờ." },
+      { id: 4, name: "Bàn phím cơ Keychron K2", price: 2190000, icon: "⌨️", desc: "Không dây, hot-swap, hỗ trợ Mac và Windows." },
+      { id: 5, name: "Chuột Logitech MX Master 3S", price: 2490000, icon: "🖱️", desc: "Cuộn siêu nhanh, kết nối đa thiết bị." },
+      { id: 6, name: "Màn hình LG UltraWide 34\"", price: 9490000, icon: "🖥️", desc: "Tỷ lệ 21:9, lý tưởng cho làm việc đa nhiệm." }
+    ];
+
+    // Tối ưu: chuẩn hóa tên 1 lần duy nhất (không phân biệt hoa/thường, bỏ dấu tiếng Việt)
+    const normalize = (s) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+       .replace(/đ/g, "d").replace(/Đ/g, "D")
+       .toLowerCase().trim();
+
+    const indexed = products.map(p => ({ ...p, key: normalize(p.name) }));
+
+    const listEl = document.getElementById("list");
+    const msgEl = document.getElementById("message");
+    const countEl = document.getElementById("count");
+    const input = document.getElementById("searchInput");
+    const fmt = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
+
+    // Render an toàn: dùng createElement + textContent (KHÔNG dùng innerHTML)
+    function render(items) {
+      listEl.replaceChildren();
+      const frag = document.createDocumentFragment();
+      items.forEach(p => {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const icon = document.createElement("div");
+        icon.className = "icon"; icon.textContent = p.icon;
+
+        const h = document.createElement("h2"); h.textContent = p.name;
+        const d = document.createElement("p"); d.textContent = p.desc;
+        const pr = document.createElement("div");
+        pr.className = "price"; pr.textContent = fmt.format(p.price);
+
+        card.append(icon, h, d, pr);
+        frag.appendChild(card);
+      });
+      listEl.appendChild(frag);
+    }
+
+    function showError(rawQuery) {
+      msgEl.replaceChildren();
+      const box = document.createElement("div");
+      box.className = "error";
+      // textContent => dù người dùng gõ <script> cũng chỉ hiển thị như chữ thường
+      box.textContent = `Không tìm thấy sản phẩm nào cho "${rawQuery}".`;
+      msgEl.appendChild(box);
+    }
+
+    function search() {
+      const raw = input.value.slice(0, 50);       // giới hạn độ dài
+      const q = normalize(raw);
+      msgEl.replaceChildren();
+
+      // includes() là so khớp chuỗi thuần, không dùng RegExp => không lỗi ký tự đặc biệt (.*+?)
+      const result = q ? indexed.filter(p => p.key.includes(q)) : indexed;
+
+      render(result);
+      countEl.textContent = `Hiển thị ${result.length}/${products.length} sản phẩm`;
+      if (result.length === 0) showError(raw.trim());
+    }
+
+    // Debounce: chỉ tìm khi người dùng ngừng gõ 200ms
+    let timer;
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(search, 200);
+    });
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      input.value = ""; search(); input.focus();
+    });
+
+    search(); // hiển thị toàn bộ khi tải trang
+  </script>
+</body>
+</html>
